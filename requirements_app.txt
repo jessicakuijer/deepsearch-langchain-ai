@@ -1,0 +1,15 @@
+streamlit
+gradio
+langgraph
+langchain
+langchain-openai
+langchain-community
+langchain-experimental
+playwright
+python-dotenv
+reportlab
+requests
+google-search-results
+beautifulsoup4
+lxml
+wikipedia
