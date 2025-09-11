@@ -2,6 +2,12 @@
 
 Une application de recherche intelligente utilisant l'IA pour effectuer des recherches approfondies et générer des rapports PDF avec notifications push.
 
+## 🎮 Démo
+
+**Essayez l'application en ligne :** [DeepSearch Cloud](https://deepsearch-langchain-ai.streamlit.app/)
+
+> 💡 **Note :** La version démo utilise les fonctionnalités cloud (sans Playwright). Pour une utilisation complète, installez l'application localement.
+
 ## ✨ Fonctionnalités
 
 - **🔍 Recherche Intelligente**: Utilise GPT-4 et des outils avancés pour des recherches approfondies
