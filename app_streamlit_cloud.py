@@ -15,6 +15,9 @@ import tempfile
 class DeepSearchCloudApp:
     def __init__(self):
         self.sidekick = None
+        self.pushover_token = None
+        self.pushover_user = None
+        self.pushover_url = "https://api.pushover.net/1/messages.json"
 
     async def initialize_sidekick(self):
         """Initialise le sidekick de manière asynchrone"""
@@ -98,6 +101,52 @@ class DeepSearchCloudApp:
         buffer.seek(0)
         
         return buffer
+
+    def send_pushover_notification(self, message, title="Rapport DeepSearch"):
+        """Envoie une notification Pushover avec le contenu textuel"""
+        if not self.pushover_token or not self.pushover_user:
+            return False, "Tokens Pushover non configurés"
+        
+        data = {
+            "token": self.pushover_token,
+            "user": self.pushover_user,
+            "message": message,
+            "title": title,
+            "priority": 0  # Priorité normale
+        }
+        
+        try:
+            response = requests.post(self.pushover_url, data=data)
+            if response.status_code == 200:
+                return True, "Notification envoyée avec succès"
+            else:
+                return False, f"Erreur: {response.status_code}"
+        except Exception as e:
+            return False, f"Erreur lors de l'envoi: {str(e)}"
+
+    def extract_main_content(self, results):
+        """Extrait le contenu principal des résultats pour la notification"""
+        main_content = ""
+        for result in results:
+            if isinstance(result, dict) and 'content' in result:
+                content = result['content']
+                role = result.get('role', 'assistant')
+                
+                if role == 'assistant' and "Evaluator Feedback" not in content:
+                    # Prendre seulement le contenu principal, pas l'évaluation
+                    main_content = content[:1000] + "..." if len(content) > 1000 else content
+                    break
+        
+        return main_content or "Recherche terminée - consultez le rapport complet."
+
+    def initialize_pushover_config(self):
+        """Initialise la configuration Pushover depuis les secrets"""
+        try:
+            self.pushover_token = st.secrets.get("PUSHOVER_TOKEN")
+            self.pushover_user = st.secrets.get("PUSHOVER_USER")
+            return bool(self.pushover_token and self.pushover_user)
+        except:
+            return False
 
     async def process_search(self, query, success_criteria):
         """Traite la recherche et retourne les résultats"""
@@ -189,7 +238,22 @@ def main():
         
         # Options
         st.subheader("📋 Options")
-        generate_pdf = st.checkbox("Générer un rapport PDF", value=True)
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            generate_pdf = st.checkbox("Générer un rapport PDF", value=True)
+            send_notification = st.checkbox("Envoyer notification push", value=False)
+        
+        with col4:
+            # Vérifier la configuration Pushover
+            pushover_configured = st.session_state.app.initialize_pushover_config()
+            if send_notification:
+                if pushover_configured:
+                    st.success("✅ Pushover configuré")
+                else:
+                    st.error("❌ Pushover non configuré")
+                    st.info("Configurez PUSHOVER_TOKEN et PUSHOVER_USER dans les secrets")
+                    send_notification = False
         
         # Bouton de recherche
         search_button = st.button("🚀 Lancer la recherche", type="primary", use_container_width=True)
@@ -228,6 +292,9 @@ def main():
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 
+                # Actions post-recherche
+                actions_completed = []
+                
                 # Génération du PDF
                 if generate_pdf:
                     try:
@@ -240,10 +307,35 @@ def main():
                             file_name=f"rapport_deepsearch_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                             mime="application/pdf"
                         )
-                        
-                        st.markdown('<div class="success-message">✅ Recherche terminée! Rapport PDF généré.</div>', unsafe_allow_html=True)
+                        actions_completed.append("PDF généré")
                     except Exception as e:
                         st.error(f"Erreur lors de la génération du PDF: {str(e)}")
+                
+                # Envoi de notification push
+                if send_notification and pushover_configured:
+                    try:
+                        # Extraire le contenu principal pour la notification
+                        main_content = st.session_state.app.extract_main_content(results)
+                        notification_message = f"Recherche terminée: {query[:50]}...\n\n{main_content}"
+                        
+                        success, msg = st.session_state.app.send_pushover_notification(
+                            notification_message,
+                            "DeepSearch - Résultats"
+                        )
+                        
+                        if success:
+                            actions_completed.append("Notification envoyée")
+                        else:
+                            st.warning(f"Notification non envoyée: {msg}")
+                    except Exception as e:
+                        st.error(f"Erreur lors de l'envoi de la notification: {str(e)}")
+                
+                # Message de succès global
+                if actions_completed:
+                    success_msg = f"✅ Recherche terminée! Actions complétées: {', '.join(actions_completed)}"
+                    st.markdown(f'<div class="success-message">{success_msg}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div class="success-message">✅ Recherche terminée!</div>', unsafe_allow_html=True)
                 
             except Exception as e:
                 st.markdown(f'<div class="error-message">❌ Erreur lors de la recherche: {str(e)}</div>', unsafe_allow_html=True)
@@ -260,6 +352,7 @@ def main():
         **Fonctionnalités:**
         - 🔍 Recherche intelligente multi-sources
         - 📄 Génération de rapports PDF
+        - 📱 Notifications push via Pushover
         - 🐍 Exécution de code Python
         - 📚 Recherche Wikipedia et Google
         
@@ -276,6 +369,11 @@ def main():
             st.success("✅ Serper API configuré")
         else:
             st.warning("⚠️ Serper API non configuré")
+        
+        if st.secrets.get("PUSHOVER_TOKEN") and st.secrets.get("PUSHOVER_USER"):
+            st.success("✅ Pushover configuré")
+        else:
+            st.warning("⚠️ Pushover non configuré")
 
 
 if __name__ == "__main__":

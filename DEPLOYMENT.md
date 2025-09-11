@@ -62,6 +62,7 @@ Assurez-vous que Streamlit Cloud utilise `requirements_streamlit.txt` :
 
 ### Fonctionnalités disponibles :
 - ✅ **Recherche intelligente** avec GPT-4
+- ✅ **Notifications push Pushover** (texte uniquement)
 - ✅ **Recherche Google** via Serper API
 - ✅ **Recherche Wikipedia**
 - ✅ **Génération de PDF** (téléchargement direct)

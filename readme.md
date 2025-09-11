@@ -60,6 +60,11 @@ python test_setup.py
 python test_tools.py
 ```
 
+6. **Tester Pushover (optionnel)**
+```bash
+python test_pushover.py
+```
+
 ## 🎯 Utilisation
 
 ### Interface Streamlit Locale (Recommandée)
