@@ -103,6 +103,7 @@ Votre application est prête pour le déploiement sur Streamlit Cloud !
 4. Configurez vos secrets API dans Settings > Secrets
 
 📖 **Guide complet :** Consultez `DEPLOYMENT.md` pour les instructions détaillées.
+📋 **Guide d'utilisation :** Consultez `GUIDE_UTILISATION.md` pour optimiser vos recherches.
 
 ## 📱 Configuration Pushover
 

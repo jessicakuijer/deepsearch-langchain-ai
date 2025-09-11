@@ -77,6 +77,11 @@ class Sidekick:
     The current date and time is {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     
     IMPORTANT: This is attempt #{current_attempt} out of 8 maximum attempts. Try to be more decisive and complete the task efficiently.
+    
+    CRITICAL RULE: When users ask for specific content (recipes, code, instructions, etc.), you MUST include the complete content in your response. 
+    - Don't just say "I created a recipe" - show the actual recipe with ingredients and steps
+    - Don't just say "I wrote the code" - include the complete code
+    - Always provide the actual requested content in your response text
 
     This is the success criteria:
     {state["success_criteria"]}
@@ -168,7 +173,13 @@ class Sidekick:
     Also, decide if more user input is required, either because the assistant has a question, needs clarification, or seems to be stuck and unable to answer without help.
 
     The Assistant has access to a tool to write files. If the Assistant says they have written a file, then you can assume they have done so.
-    Overall you should give the Assistant the benefit of the doubt if they say they've done something. But you should reject if you feel that more work should go into this.
+    
+    CRITICAL: If the user asks for specific content (like a recipe, instructions, code, etc.), the Assistant MUST provide the actual content in their response, not just say they created it. 
+    - If asking for a recipe: the full recipe with ingredients and steps must be visible
+    - If asking for code: the actual code must be shown
+    - If asking for instructions: the complete instructions must be provided
+    
+    Do not accept responses that claim to have provided something without actually showing it in the response text.
 
     """
         if state["feedback_on_work"]:
