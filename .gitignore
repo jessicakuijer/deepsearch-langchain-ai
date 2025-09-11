@@ -65,3 +65,5 @@ Desktop.ini
 # Fichiers de test locaux
 test_*.py
 debug_*.py
+
+requirements_app.txt
