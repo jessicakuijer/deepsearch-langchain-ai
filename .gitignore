@@ -58,9 +58,11 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Fichiers temporaires
-*.tmp
-*.log
+# Fichiers de données locales
+sandbox/history.json
+sandbox/preferences.json
+sandbox/reports/
+
 
 # Fichiers de test locaux
 test_*.py

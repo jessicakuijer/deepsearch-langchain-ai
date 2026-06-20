@@ -10,11 +10,15 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from typing import List, Any, Optional, Dict
 from pydantic import BaseModel, Field
 from sidekick_tools import playwright_tools, other_tools
+import os
 import uuid
 import asyncio
 from datetime import datetime
 
 load_dotenv(override=True)
+
+EVALUATOR_MODEL = "gpt-5.5"
+WORKER_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 
 
 class State(TypedDict):
@@ -49,11 +53,13 @@ class Sidekick:
     async def setup(self):
         self.tools, self.browser, self.playwright = await playwright_tools()
         self.tools += await other_tools()
-        worker_llm = ChatOpenAI(model="gpt-4o-mini")
+        worker_llm = ChatOpenAI(model=WORKER_MODEL)
         self.worker_llm_with_tools = worker_llm.bind_tools(self.tools)
-        evaluator_llm = ChatOpenAI(model="gpt-4o-mini")
+        evaluator_llm = ChatOpenAI(model=EVALUATOR_MODEL)
         self.evaluator_llm_with_output = evaluator_llm.with_structured_output(EvaluatorOutput)
         await self.build_graph()
+        if self.graph is None:
+            raise RuntimeError("Échec de compilation du graphe LangGraph.")
 
     def worker(self, state: State) -> Dict[str, Any]:
         # Incrémenter le compteur de tentatives
@@ -240,20 +246,98 @@ class Sidekick:
             interrupt_after=[]
         )
 
-    async def run_superstep(self, message, success_criteria, history):
-        config = {
-            "configurable": {"thread_id": self.sidekick_id},
-            "recursion_limit": 50  # Augmenter la limite de récursion
-        }
-
-        state = {
-            "messages": message,
+    def _initial_state(self, message, success_criteria):
+        if isinstance(message, str):
+            messages = [HumanMessage(content=message)]
+        else:
+            messages = message
+        return {
+            "messages": messages,
             "success_criteria": success_criteria or "The answer should be clear and accurate",
             "feedback_on_work": None,
             "success_criteria_met": False,
             "user_input_needed": False,
             "attempt_count": 0,
         }
+
+    def _extract_result_payload(self, result):
+        messages = result.get("messages", [])
+        report_content = ""
+        evaluator_feedback = ""
+        for msg in reversed(messages):
+            content = msg.content if hasattr(msg, "content") else (msg.get("content") if isinstance(msg, dict) else str(msg))
+            if not content:
+                continue
+            if "Evaluator Feedback" in content:
+                if not evaluator_feedback:
+                    evaluator_feedback = content
+                continue
+            if not report_content:
+                report_content = content
+                break
+        return {
+            "messages": messages,
+            "report_content": report_content,
+            "evaluator_feedback": evaluator_feedback,
+            "attempt_count": result.get("attempt_count", 1),
+            "success_criteria_met": result.get("success_criteria_met", False),
+        }
+
+    async def run_superstep_streaming(self, message, success_criteria, on_event=None):
+        if self.graph is None:
+            await self.setup()
+        if self.graph is None:
+            raise RuntimeError("Graph LangGraph non initialisé.")
+
+        config = {
+            "configurable": {"thread_id": self.sidekick_id},
+            "recursion_limit": 50,
+        }
+        state = self._initial_state(message, success_criteria)
+        final_result = None
+        try:
+            async for event in self.graph.astream_events(state, config=config, version="v2"):
+                if on_event:
+                    on_event(
+                        {
+                            "event": event.get("event"),
+                            "name": event.get("name") or "",
+                            "data": event.get("data") or {},
+                        }
+                    )
+                if event.get("event") == "on_chain_end" and event.get("name") == "LangGraph":
+                    output = event.get("data", {}).get("output")
+                    if output:
+                        final_result = output
+            if final_result is None:
+                final_result = await self.graph.ainvoke(state, config=config)
+            return self._extract_result_payload(final_result)
+        except Exception as e:
+            error_msg = str(e)
+            if "tool_calls" in error_msg and "tool_call_id" in error_msg:
+                report = "Erreur technique lors de l'utilisation des outils de recherche. Veuillez reformuler votre demande ou essayer une recherche plus simple."
+            else:
+                report = f"Erreur lors de la recherche: {error_msg}"
+            return {
+                "messages": [],
+                "report_content": report,
+                "evaluator_feedback": "La recherche a échoué à cause d'un problème technique.",
+                "attempt_count": state.get("attempt_count", 1),
+                "success_criteria_met": False,
+            }
+
+    async def run_superstep(self, message, success_criteria, history):
+        if self.graph is None:
+            await self.setup()
+        if self.graph is None:
+            raise RuntimeError("Graph LangGraph non initialisé.")
+
+        config = {
+            "configurable": {"thread_id": self.sidekick_id},
+            "recursion_limit": 50  # Augmenter la limite de récursion
+        }
+
+        state = self._initial_state(message, success_criteria)
         try:
             result = await self.graph.ainvoke(state, config=config)
             user = {"role": "user", "content": message}
