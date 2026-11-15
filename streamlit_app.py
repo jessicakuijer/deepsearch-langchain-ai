@@ -18,11 +18,13 @@ except ImportError:
 def _sync_secrets_to_env() -> None:
     try:
         for key in (
-            "OPENAI_API_KEY",
+            "GROK_API_KEY",
+            "XAI_API_KEY",
+            "GROK_MODEL",
+            "GROK_EVALUATOR_MODEL",
             "SERPER_API_KEY",
             "PUSHOVER_TOKEN",
             "PUSHOVER_USER",
-            "OPENAI_MODEL",
         ):
             if key in st.secrets and not os.getenv(key):
                 os.environ[key] = str(st.secrets[key])
@@ -65,8 +67,8 @@ def main() -> None:
     )
     inject_design_system()
     _sync_secrets_to_env()
-    if not os.getenv("OPENAI_API_KEY"):
-        st.error("Clé API OpenAI manquante. Configurez OPENAI_API_KEY dans `.env` ou les secrets Streamlit.")
+    if not (os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY")):
+        st.error("Clé API Grok manquante. Configurez GROK_API_KEY dans `.env` ou les secrets Streamlit.")
         st.stop()
     init_session_state(playwright_available=PLAYWRIGHT_AVAILABLE)
     render_shell(render_main)

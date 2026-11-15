@@ -31,8 +31,8 @@ def render_settings() -> None:
 
     st.markdown(
         f'<div class="ds-settings-card"><div style="flex:1"><div style="font:600 14px/1.3 IBM Plex Sans,sans-serif;color:#1F2823">'
-        f'OpenAI</div><div style="font:400 12.5px/1.4 IBM Plex Sans,sans-serif;color:#8A938D;margin-top:2px">'
-        f"Modèle worker · {status['worker_model']}</div></div>{pill(status['openai_ok'])}</div>",
+        f'Grok</div><div style="font:400 12.5px/1.4 IBM Plex Sans,sans-serif;color:#8A938D;margin-top:2px">'
+        f"Modèle worker · {status['worker_model']}</div></div>{pill(status['grok_ok'])}</div>",
         unsafe_allow_html=True,
     )
     st.markdown(

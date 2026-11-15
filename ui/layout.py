@@ -19,12 +19,12 @@ def _env_or_secret(key: str) -> str | None:
 
 
 def get_system_status() -> dict:
-    openai_ok = bool(_env_or_secret("OPENAI_API_KEY"))
+    grok_ok = bool(_env_or_secret("GROK_API_KEY") or _env_or_secret("XAI_API_KEY"))
     serper_ok = bool(_env_or_secret("SERPER_API_KEY"))
     pushover_ok = bool(_env_or_secret("PUSHOVER_TOKEN") and _env_or_secret("PUSHOVER_USER"))
-    worker_model = _env_or_secret("OPENAI_MODEL") or "gpt-5.5"
+    worker_model = _env_or_secret("GROK_MODEL") or "grok-4.7"
     return {
-        "openai_ok": openai_ok,
+        "grok_ok": grok_ok,
         "serper_ok": serper_ok,
         "pushover_ok": pushover_ok,
         "worker_model": worker_model,
@@ -33,7 +33,7 @@ def get_system_status() -> dict:
 
 def _status_rows_html(status: dict) -> str:
     rows = [
-        ("OpenAI", f"· {status['worker_model']}", status["openai_ok"]),
+        ("Grok", f"· {status['worker_model']}", status["grok_ok"]),
         ("Serper", "· Web", status["serper_ok"]),
         ("Pushover", "· notif.", status["pushover_ok"]),
     ]

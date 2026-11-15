@@ -46,7 +46,7 @@ cp config_example.env .env
 Puis éditez `.env` avec vos vraies valeurs:
 ```env
 # Obligatoire
-OPENAI_API_KEY=votre_clé_openai
+GROK_API_KEY=votre_clé_grok
 
 # Optionnel pour les recherches web
 SERPER_API_KEY=votre_clé_serper
@@ -139,7 +139,7 @@ Votre application est prête pour le déploiement sur Streamlit Cloud !
 ### Problèmes courants
 
 **Erreur Playwright**: Exécutez `playwright install`
-**Erreur OpenAI**: Vérifiez votre clé API dans `.env`
+**Erreur Grok**: Vérifiez `GROK_API_KEY` dans `.env` ou `.streamlit/secrets.toml`
 **Notifications non reçues**: Vérifiez vos tokens Pushover
 **Erreur BeautifulSoup**: Exécutez `python -m pip install beautifulsoup4 lxml`
 **Erreur Wikipedia**: Exécutez `python -m pip install wikipedia`

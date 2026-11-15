@@ -17,8 +17,23 @@ from datetime import datetime
 
 load_dotenv(override=True)
 
-EVALUATOR_MODEL = "gpt-5.5"
-WORKER_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
+XAI_BASE_URL = os.getenv("XAI_API_BASE", "https://api.x.ai/v1")
+DEFAULT_GROK_MODEL = "grok-4.7"
+WORKER_MODEL = os.getenv("GROK_MODEL", DEFAULT_GROK_MODEL)
+EVALUATOR_MODEL = os.getenv("GROK_EVALUATOR_MODEL", WORKER_MODEL)
+
+
+def grok_api_key() -> str | None:
+    return os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY")
+
+
+def make_grok(model: str) -> ChatOpenAI:
+    api_key = grok_api_key()
+    if not api_key:
+        raise RuntimeError(
+            "Clé API Grok manquante. Configurez GROK_API_KEY dans `.streamlit/secrets.toml` ou `.env`."
+        )
+    return ChatOpenAI(model=model, api_key=api_key, base_url=XAI_BASE_URL)
 
 
 class State(TypedDict):
@@ -53,10 +68,12 @@ class Sidekick:
     async def setup(self):
         self.tools, self.browser, self.playwright = await playwright_tools()
         self.tools += await other_tools()
-        worker_llm = ChatOpenAI(model=WORKER_MODEL)
+        worker_llm = make_grok(WORKER_MODEL)
         self.worker_llm_with_tools = worker_llm.bind_tools(self.tools)
-        evaluator_llm = ChatOpenAI(model=EVALUATOR_MODEL)
-        self.evaluator_llm_with_output = evaluator_llm.with_structured_output(EvaluatorOutput)
+        evaluator_llm = make_grok(EVALUATOR_MODEL)
+        self.evaluator_llm_with_output = evaluator_llm.with_structured_output(
+            EvaluatorOutput, method="function_calling"
+        )
         await self.build_graph()
         if self.graph is None:
             raise RuntimeError("Échec de compilation du graphe LangGraph.")

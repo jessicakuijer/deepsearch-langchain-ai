@@ -265,7 +265,7 @@ def _build_header(
     attempt_count: int,
     styles: dict[str, ParagraphStyle],
 ) -> list:
-    worker_model = os.getenv("OPENAI_MODEL", "gpt-5.5")
+    worker_model = os.getenv("GROK_MODEL", "grok-4.7")
     return [
         Paragraph("RAPPORT DE RECHERCHE", styles["label"]),
         Spacer(1, 2),

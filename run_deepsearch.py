@@ -19,9 +19,35 @@ def check_requirements():
         print("💡 Installez les dépendances avec: pip install -r requirements.txt")
         return False
 
+def _load_local_config() -> None:
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        pass
+    secrets_path = Path(".streamlit/secrets.toml")
+    if not secrets_path.exists():
+        return
+    try:
+        import tomllib
+    except ImportError:
+        return
+    with secrets_path.open("rb") as handle:
+        secrets = tomllib.load(handle)
+    for key in ("GROK_API_KEY", "XAI_API_KEY", "GROK_MODEL"):
+        value = secrets.get(key)
+        if value and not os.getenv(key):
+            os.environ[key] = str(value)
+
+
 def check_environment():
     """Vérifie les variables d'environnement"""
-    required_vars = ["OPENAI_API_KEY"]
+    _load_local_config()
+    if os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY"):
+        required_vars = []
+    else:
+        required_vars = ["GROK_API_KEY"]
     optional_vars = ["PUSHOVER_TOKEN", "PUSHOVER_USER", "SERPER_API_KEY"]
     
     missing_required = []

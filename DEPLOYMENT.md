@@ -41,7 +41,7 @@ git push origin main
 Dans Streamlit Cloud, allez dans **Settings > Secrets** et ajoutez :
 
 ```toml
-OPENAI_API_KEY = "sk-votre_clé_openai_ici"
+GROK_API_KEY = "xai-votre_clé_grok_ici"
 SERPER_API_KEY = "votre_clé_serper_ici"
 PUSHOVER_TOKEN = "votre_token_pushover_ici"
 PUSHOVER_USER = "votre_user_pushover_ici"
